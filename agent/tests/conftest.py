@@ -53,6 +53,11 @@ def write_session(path: Path, sid: str, cwd: str, title: str = "") -> None:
 
 @pytest.fixture
 def env(tmp_path):
+    return make_env(tmp_path)
+
+
+def make_env(tmp_path: Path) -> Settings:
+    """Home falso con proyectos, historial y perfiles; también lo usa la prueba e2e de la PWA."""
     home = tmp_path / "home"
     prog = home / "programacion"
     proj = prog / "demo"
@@ -77,8 +82,7 @@ def env(tmp_path):
         d.mkdir(parents=True)
         (d / "settings.json").write_text(json.dumps(settings))
     (home / ".claude-accounts" / "cuenta1" / ".credentials.json").write_text("{}")
-    s = Settings(home=home, dev=True, claude_bin="/bin/true", permission_timeout_s=5)
-    return s
+    return Settings(home=home, dev=True, claude_bin="/bin/true", permission_timeout_s=5)
 
 
 class FakeClient:

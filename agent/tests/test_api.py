@@ -270,3 +270,46 @@ async def test_prefs_validan_clave(client):
     assert r.status_code == 404
     r = await client.put("/api/prefs/project/demo", json={"model": "sonnet"}, headers=JSON)
     assert r.status_code == 200 and r.json()["model"] == "sonnet"
+
+
+async def test_perfiles_disponibles(client):
+    await _account(client, "cuenta1")
+    rows = {r["alias"]: r for r in (await client.get("/api/profiles")).json()}
+    assert set(rows) == {"cuenta1", "cuenta2", "mala"}
+    assert rows["cuenta1"]["registered"] and not rows["cuenta2"]["registered"]
+    assert rows["mala"]["settings_base_url"]
+
+
+async def test_retomar_tras_cerrar_nuestro_proceso_no_da_409(client, app, env):
+    acc = await _account(client)
+    r = await client.post("/api/runs", json={"project": "demo", "prompt": "a", "session_id": SID_OLD,
+                                             "account_id": acc}, headers=JSON)
+    run = app.state.runs.get(r.json()["run_id"])
+    await wait_for(lambda: "result" in _events(run))
+    assert run.public()["last_seq"] == run.events[-1]["seq"]
+    p = history.find_session(env, SID_OLD)
+    now = time.time()
+    os.utime(p, (now, now))  # nuestro proceso escribió el historial
+    await client.delete(f"/api/runs/{run.id}", headers=JSON)
+    r = await client.post("/api/runs", json={"project": "demo", "prompt": "b", "session_id": SID_OLD,
+                                             "account_id": acc}, headers=JSON)
+    assert r.status_code == 200, r.text
+    # pero una escritura posterior al cierre (otro proceso) sí cuenta
+    await client.delete(f"/api/runs/{r.json()['run_id']}", headers=JSON)
+    later = time.time() + 5
+    os.utime(p, (later, later))
+    r = await client.post("/api/runs", json={"project": "demo", "prompt": "c", "session_id": SID_OLD,
+                                             "account_id": acc}, headers=JSON)
+    assert r.status_code == 409
+
+
+async def test_csp_en_respuestas(client):
+    csp = (await client.get("/api/pc")).headers["content-security-policy"]
+    assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp
+
+
+async def test_pwa_servida_con_csp(client):
+    r = await client.get("/")
+    assert r.status_code == 200 and "<title>airwork</title>" in r.text
+    assert "script-src 'self'" in r.headers["content-security-policy"]
+    assert (await client.get("/sw.js")).status_code == 200

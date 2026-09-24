@@ -108,6 +108,16 @@ class Store:
             pass
         return st
 
+    def list_profiles(self) -> list[dict]:
+        """Perfiles en ~/.claude-accounts que podrían registrarse como cuenta."""
+        root = self.s.accounts_root
+        if not root.is_dir():
+            return []
+        with self._lock:
+            used = {r[0] for r in self._db.execute("SELECT alias FROM accounts")}
+        return [{"alias": d.name, "registered": d.name in used, **self.check_profile(d.name)}
+                for d in sorted(root.iterdir()) if d.is_dir() and ALIAS_RE.match(d.name)]
+
     def _public(self, row: sqlite3.Row) -> dict:
         st = self.check_profile(row["alias"])
         return {

@@ -116,6 +116,7 @@ class Run:
             "permission_mode": self.cfg.permission_mode, "state": self.state, "created": self.created,
             "last_activity": self.last_activity,
             "pending_permissions": [{"req_id": p.req_id, "tool": p.tool} for p in self.pending.values()],
+            "last_seq": self.events[-1]["seq"] if self.events else 0,
         }
 
     # --- permisos -----------------------------------------------------------------
@@ -290,8 +291,13 @@ class Run:
             return
 
 
-def external_activity(session_id: str, path: Path | None, own_pids: set[int]) -> list[str]:
-    """Señales de que otra instancia de claude usa la sesión. Heurística (ver diseño §4.3)."""
+def external_activity(session_id: str, path: Path | None, own_pids: set[int],
+                      own_closed_at: float | None = None) -> list[str]:
+    """Señales de que otra instancia de claude usa la sesión. Heurística (ver diseño §4.3).
+
+    own_closed_at: cuándo el agente cerró su propio proceso de esta sesión; escrituras hasta
+    ese momento son nuestras y no cuentan como actividad externa.
+    """
     reasons = []
     proc = Path("/proc")
     if proc.is_dir():
@@ -304,7 +310,8 @@ def external_activity(session_id: str, path: Path | None, own_pids: set[int]) ->
                 continue
             if any(b"claude" in a for a in args[:2]) and any(session_id.encode() in a for a in args):
                 reasons.append(f"proceso {p.name}")
-    if path is not None and path.exists() and time.time() - path.stat().st_mtime < EXTERNAL_WRITE_WINDOW_S:
+    if path is not None and path.exists() and time.time() - path.stat().st_mtime < EXTERNAL_WRITE_WINDOW_S \
+            and not (own_closed_at is not None and path.stat().st_mtime <= own_closed_at + 2):
         reasons.append("el historial cambió hace menos de 90 s")
     return reasons
 
@@ -316,6 +323,7 @@ class RunManager:
         self.client_factory: ClientFactory = client_factory or ClaudeSDKClient
         self.runs: dict[str, Run] = {}
         self.by_session: dict[str, str] = {}
+        self.closed_at: dict[str, float] = {}  # session_id -> cierre de nuestro último proceso
         self._lock = asyncio.Lock()
         self._reaper: asyncio.Task | None = None
 
@@ -348,6 +356,7 @@ class RunManager:
         self.runs.pop(run.id, None)
         if run.session_id and self.by_session.get(run.session_id) == run.id:
             self.by_session.pop(run.session_id, None)
+            self.closed_at[run.session_id] = time.time()
 
     def _own_pids(self) -> set[int]:
         pids = {os.getpid()}
@@ -365,7 +374,8 @@ class RunManager:
                 if existing is not None:
                     await existing.send(prompt)
                     return existing, True
-                reasons = external_activity(cfg.session_id, session_path, self._own_pids())
+                reasons = external_activity(cfg.session_id, session_path, self._own_pids(),
+                                            self.closed_at.get(cfg.session_id))
                 if reasons:
                     raise RunError(409, "La sesión parece abierta en otro proceso; usa fork", reasons=reasons)
             if len(self.runs) >= self.s.max_runs:

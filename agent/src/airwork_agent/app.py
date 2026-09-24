@@ -24,6 +24,9 @@ from .runs import ClientFactory, RunConfig, RunError, RunManager
 from .store import InvalidInput, Store, validate_run_options
 
 HANDOFF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,150}\.md$")
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+       "manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
+       "form-action 'self'")
 PWA_DIR = Path(__file__).resolve().parent.parent.parent.parent / "pwa"
 
 
@@ -131,6 +134,7 @@ def create_app(s: Settings | None = None, client_factory: ClientFactory | None =
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("Referrer-Policy", "no-referrer")
         resp.headers.setdefault("X-Frame-Options", "DENY")
+        resp.headers.setdefault("Content-Security-Policy", CSP)
         if request.url.path.startswith("/api/"):
             resp.headers.setdefault("Cache-Control", "no-store")
         return resp
@@ -337,6 +341,10 @@ def create_app(s: Settings | None = None, client_factory: ClientFactory | None =
     @app.get("/api/accounts")
     def accounts(who: Identity = Depends(ident)):
         return store.list_accounts()
+
+    @app.get("/api/profiles")
+    def profiles(who: Identity = Depends(ident)):
+        return store.list_profiles()
 
     @app.post("/api/accounts", status_code=201)
     def create_account(body: AccountCreate, who: Identity = Depends(ident)):
