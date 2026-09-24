@@ -161,6 +161,10 @@ class Run:
             cwd=c.cwd, cli_path=self.m.s.claude_bin, env=env, model=c.model, effort=c.effort,  # type: ignore[arg-type]
             permission_mode=c.permission_mode,  # type: ignore[arg-type]
             can_use_tool=self.can_use_tool, stderr=self._on_stderr,
+            # Sin esto el SDK lanza claude con --system-prompt "" y sin CLAUDE.md, skills ni
+            # reglas de permisos: la sesión debe comportarse igual que en la terminal.
+            system_prompt={"type": "preset", "preset": "claude_code"},
+            setting_sources=["user", "project", "local"],
         )
         if c.session_id:
             opts.resume = c.session_id

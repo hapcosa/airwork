@@ -78,6 +78,9 @@ async def test_run_nuevo_flujo_completo(client, app, env):
     assert fc.options.cwd == str(env.programming_root / "demo")
     assert fc.options.env == {"CLAUDE_CONFIG_DIR": str(env.accounts_root / "cuenta1")}
     assert fc.options.session_id == body["session_id"] and fc.options.resume is None
+    # Mismo comportamiento que la terminal: prompt de Claude Code, CLAUDE.md, skills y permisos.
+    assert fc.options.system_prompt == {"type": "preset", "preset": "claude_code"}
+    assert fc.options.setting_sources == ["user", "project", "local"]
     assert fc.options.effort == "high" and fc.options.model == "sonnet"
     # la sesión recuerda cuenta y modelo
     prefs = (await client.get(f"/api/prefs/session/{body['session_id']}")).json()
