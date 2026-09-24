@@ -1,0 +1,14 @@
+[Unit]
+Description=airwork: servidores de Claude Code Remote Control
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/programacion/airwork/bin/rc-all up
+ExecStop=%h/programacion/airwork/bin/rc-all down
+
+[Install]
+WantedBy=default.target

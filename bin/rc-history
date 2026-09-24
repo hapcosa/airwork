@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Lista las conversaciones de Claude Code de un proyecto (incluye sus worktrees).
+
+Uso: rc-history <proyecto> [n]      # últimas n sesiones (por defecto 15)
+     rc-history <proyecto> --show <id-o-prefijo>   # muestra los prompts de una sesión
+"""
+import glob
+import json
+import os
+import sys
+from datetime import datetime
+
+ROOT = os.path.expanduser("~/.claude/projects")
+
+
+def encode(path):
+    return "".join(c if c.isalnum() else "-" for c in path)
+
+
+def session_files(proj):
+    base = encode(os.path.expanduser(f"~/programacion/{proj}"))
+    dirs = [d for d in glob.glob(f"{ROOT}/{base}*")
+            if os.path.basename(d) == base or os.path.basename(d).startswith(base + "--")]
+    return [f for d in dirs for f in glob.glob(f"{d}/*.jsonl")]
+
+
+def text_of(msg):
+    c = msg.get("content") if isinstance(msg, dict) else None
+    if isinstance(c, str):
+        return c
+    if isinstance(c, list):
+        return " ".join(p.get("text", "") for p in c if isinstance(p, dict) and p.get("type") == "text")
+    return ""
+
+
+def is_real_prompt(o):
+    if o.get("type") != "user" or o.get("isMeta") or o.get("isSidechain"):
+        return False
+    t = text_of(o.get("message", {})).strip()
+    return bool(t) and not t.startswith("<") and "tool_use_id" not in str(o.get("message", {}).get("content", ""))[:200]
+
+
+def summarize(path):
+    info = {"id": os.path.basename(path)[:-6], "title": "", "last": "", "prompts": 0,
+            "branch": "", "cwd": "", "mtime": os.path.getmtime(path)}
+    try:
+        for line in open(path, encoding="utf-8", errors="replace"):
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue
+            t = o.get("type")
+            if t == "custom-title":
+                info["title"] = o.get("customTitle", "") or info["title"]
+            elif t == "ai-title" and not info["title"].startswith("*"):
+                info["title"] = o.get("aiTitle", "") or info["title"]
+            elif t == "last-prompt":
+                info["last"] = o.get("lastPrompt", "")
+            elif is_real_prompt(o):
+                info["prompts"] += 1
+                info["branch"] = o.get("gitBranch", info["branch"])
+                info["cwd"] = o.get("cwd", info["cwd"])
+    except OSError:
+        pass
+    return info
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__.strip())
+        sys.exit(1)
+    proj = sys.argv[1]
+    files = session_files(proj)
+    if not files:
+        print(f"Sin historial para {proj}")
+        sys.exit(1)
+
+    if len(sys.argv) >= 4 and sys.argv[2] == "--show":
+        match = [f for f in files if os.path.basename(f).startswith(sys.argv[3])]
+        if len(match) != 1:
+            print(f"{len(match)} sesiones coinciden con {sys.argv[3]}")
+            sys.exit(1)
+        for line in open(match[0], encoding="utf-8", errors="replace"):
+            try:
+                o = json.loads(line)
+            except ValueError:
+                continue
+            if is_real_prompt(o):
+                ts = o.get("timestamp", "")[:16].replace("T", " ")
+                print(f"[{ts}] {text_of(o['message']).strip()[:400]}\n")
+        return
+
+    n = int(sys.argv[2]) if len(sys.argv) > 2 else 15
+    rows = [s for s in map(summarize, files) if s["prompts"] > 0]
+    rows.sort(key=lambda s: s["mtime"], reverse=True)
+    for s in rows[:n]:
+        when = datetime.fromtimestamp(s["mtime"]).strftime("%m-%d %H:%M")
+        title = (s["title"] or s["last"] or "(sin título)").replace("\n", " ")[:70]
+        wt = " [worktree]" if "/worktrees/" in s["cwd"] else ""
+        print(f"{when}  {s['id'][:8]}  {s['prompts']:>3}p  {s['branch'][:20]:<20} {title}{wt}")
+    print(f"\nRetomar: rc-resume {proj} <id>   ·   Ver prompts: rc-history {proj} --show <id>")
+
+
+if __name__ == "__main__":
+    main()

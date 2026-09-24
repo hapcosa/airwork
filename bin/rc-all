@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Gestiona los servidores de Remote Control de todos los proyectos de config/projects.conf.
+# Uso: rc-all up | down | status | check | restart <proyecto>
+set -uo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+conf="$here/../config/projects.conf"
+cmd="${1:-status}"
+
+entries() { grep -vE '^\s*(#|$)' "$conf"; }
+
+check_one() {
+  local proj="$1" profile="$2" dir="$HOME/programacion/$1" cfg="$HOME/.claude-accounts/$2" ok=0
+  [[ -d "$dir" ]] || { echo "  ✗ $proj: no existe $dir"; return 1; }
+  [[ -d "$cfg" ]] || { echo "  ✗ $proj: no existe el perfil $profile (crea con: rc-profile $profile)"; return 1; }
+  if grep -qs ANTHROPIC_BASE_URL "$dir"/.claude/settings*.json; then
+    echo "  ✗ $proj: $(grep -ls ANTHROPIC_BASE_URL "$dir"/.claude/settings*.json | xargs -n1 basename | tr '\n' ' ')fija ANTHROPIC_BASE_URL (bloquea Remote Control)"; ok=1
+  fi
+  local trusted
+  trusted=$(python3 -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("projects",{}).get(sys.argv[2],{}).get("hasTrustDialogAccepted",False))
+except Exception: print(False)' "$cfg/.claude.json" "$dir")
+  if [[ "$trusted" != "True" ]]; then
+    echo "  ✗ $proj: falta aceptar trust → cd $dir && env -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR=$cfg claude"; ok=1
+  fi
+  return $ok
+}
+
+case "$cmd" in
+  up)
+    while read -r proj profile mode; do
+      if check_one "$proj" "$profile" >/dev/null; then
+        "$here/rc-up" "$proj" "$profile" "$mode" | head -1
+      else
+        echo "Omitido $proj:"; check_one "$proj" "$profile"
+      fi
+    done < <(entries) ;;
+  down)
+    while read -r proj profile _; do
+      tmux kill-session -t "rc-${proj}-${profile}" 2>/dev/null && echo "Detenido $proj"
+    done < <(entries) ;;
+  restart)
+    proj="${2:?uso: rc-all restart <proyecto>}"
+    read -r _ profile mode < <(entries | awk -v p="$proj" '$1==p')
+    [[ -n "${profile:-}" ]] || { echo "$proj no está en $conf" >&2; exit 1; }
+    tmux list-sessions -F '#S' 2>/dev/null | grep "^rc-${proj}-" | xargs -r -n1 tmux kill-session -t
+    "$here/rc-up" "$proj" "$profile" "$mode" ;;
+  check)
+    while read -r proj profile _; do
+      check_one "$proj" "$profile" && echo "  ✓ $proj ($profile)"
+    done < <(entries) ;;
+  status)
+    while read -r proj profile mode; do
+      s="rc-${proj}-${profile}"
+      if tmux has-session -t "$s" 2>/dev/null; then
+        last=$(tmux capture-pane -p -t "$s" | grep -E 'Connected|terminó|Error' | tail -1 | sed 's/^[^A-Za-z[]*//')
+        printf '%-22s %-8s %-11s %s\n' "$proj" "$profile" "$mode" "${last:-corriendo}"
+      else
+        printf '%-22s %-8s %-11s %s\n' "$proj" "$profile" "$mode" "detenido"
+      fi
+    done < <(entries)
+    tmux list-sessions -F '#S' 2>/dev/null | grep '^resume-' | sed 's/^/retomada: /' ;;
+  *) echo "uso: rc-all up | down | status | check | restart <proyecto>" >&2; exit 1 ;;
+esac

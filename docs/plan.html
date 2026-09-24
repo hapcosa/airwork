@@ -1,0 +1,316 @@
+<title>Plan airwork</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F2F4F6; --surface:#FFFFFF; --ink:#16202A; --muted:#566676; --line:#D8DEE4;
+  --accent:#0F6E6A; --accent-soft:#E0F0EE; --warn:#A8501A; --warn-soft:#F8EADF; --ok:#2E7D4F;
+  --code:#E9EDF1;
+  --f-display:"Instrument Sans",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0E1419; --surface:#151D24; --ink:#E3E9EF; --muted:#93A3B2; --line:#26323D;
+    --accent:#52C2B8; --accent-soft:#12302F; --warn:#E7955C; --warn-soft:#33221A; --ok:#6CCB93;
+    --code:#1C2630;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0E1419; --surface:#151D24; --ink:#E3E9EF; --muted:#93A3B2; --line:#26323D;
+  --accent:#52C2B8; --accent-soft:#12302F; --warn:#E7955C; --warn-soft:#33221A; --ok:#6CCB93;
+  --code:#1C2630;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:15px/1.6 var(--f-body);padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:2rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.35rem;font-weight:600}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:14px}
+.eyebrow{font:500 .72rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.meta{font:400 .8rem/1.5 var(--f-mono);color:var(--muted)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code);padding:.08em .35em;border-radius:4px;overflow-wrap:anywhere}
+pre{margin:0}
+.lead{font-size:1.05rem;max-width:62ch}
+header{display:flex;flex-direction:column;gap:12px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px}
+nav.toc a{font:500 .8rem/1 var(--f-mono);color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:7px 10px;border-radius:999px}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 14px;border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:6px}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout strong{font-family:var(--f-display)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:.88rem}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font:500 .72rem/1.3 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--code)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+tr.pick td:first-child{color:var(--accent)}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.comp div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.comp .tag{font:500 .7rem/1 var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+ol.sec{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px}
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.phase.now{border-color:var(--accent)}
+.phase-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.phase-head .meta{white-space:nowrap}
+.pill{font:500 .7rem/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.progress{height:4px;background:var(--code);border-radius:4px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.checks{list-style:none;padding:0;gap:4px}
+.checks label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:4px 0}
+.checks input{margin-top:.3em;accent-color:var(--ok);width:16px;height:16px;flex:none}
+.checks input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.checks input:checked + span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.exit{font-size:.88rem;color:var(--muted)}
+.exit b{color:var(--ink);font-weight:600}
+.risks{display:flex;flex-direction:column;gap:10px}
+.risks div{display:flex;flex-direction:column;gap:2px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.risks div:last-child{border-bottom:0}
+footer{font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+a{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){.progress span{transition:none}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">~/programacion · airwork</span>
+  <h1>Claude Code desde el celular, en varios PCs y con varias cuentas</h1>
+  <p class="lead">Envía prompts, cambia el modelo y el effort, compacta, retoma sesiones y pasa el trabajo entre agentes con handoffs. Todo sin abrir puertos en casa.</p>
+  <p class="meta">2026-09-24 · Claude Code v2.1.280 · Fase 0: servidor conectado</p>
+  <nav class="toc" aria-label="Secciones">
+    <a href="#conectar">Conectar</a><a href="#fase0">Fase 0: estado</a><a href="#decision">Decisión</a><a href="#opciones">Opciones</a><a href="#arquitectura">Arquitectura</a>
+    <a href="#seguridad">Seguridad</a><a href="#handoff">Handoff</a><a href="#fases">Fases</a><a href="#riesgos">Riesgos</a>
+  </nav>
+</header>
+
+<section id="conectar">
+  <span class="eyebrow">Conectar ahora</span>
+  <h2>Abrir la sesión de kryptolab</h2>
+  <div class="callout">
+    <p><strong>Cuenta:</strong> cyb3rsignals (perfil <code>remote</code>). El celular tiene que estar conectado con esa misma cuenta.</p>
+    <p><strong>App Claude:</strong> pestaña Code → <code>arch-trader/kryptolab/remote</code> (ícono de computador con punto verde).</p>
+    <p><strong>Navegador:</strong> <a href="https://claude.ai/code?environment=env_01PfUux1FcXNe5tj3Tu1iwh7">abrir el entorno en claude.ai/code</a></p>
+  </div>
+  <p class="meta">Si aparece offline: en el PC, <code>tmux attach -t rc-kryptolab-remote</code> para ver el error, o <code>~/programacion/airwork/bin/rc-up kryptolab</code> para relanzarlo.</p>
+</section>
+
+<section id="fase0">
+  <span class="eyebrow">Hallazgos al empezar la Fase 0</span>
+  <h2>Servidor kryptolab conectado; headroom resuelto con un perfil aparte</h2>
+  <div class="callout warn">
+    <p><strong>Bloqueo:</strong> <code>~/.claude/settings.json</code> y <code>signalsTrading/.claude/settings.local.json</code> fijan <code>ANTHROPIC_BASE_URL=http://127.0.0.1:8787</code> (headroom). Remote Control no se activa cuando el tráfico pasa por un host distinto de <code>api.anthropic.com</code>.</p>
+  </div>
+  <div class="callout">
+    <p><strong>Solución, sin tocar tu configuración actual:</strong> un perfil aparte en <code>~/.claude-accounts/remote/</code>, con el <code>settings.json</code> global sin esa variable y enlaces simbólicos a <code>CLAUDE.md</code>, <code>RTK.md</code>, <code>skills</code>, <code>agents</code>, <code>plugins</code> y <code>projects</code>. Así comparte el historial, lo que permite retomar sesiones.</p>
+    <p><strong>Costo:</strong> las sesiones remotas no pasan por la compresión de headroom.</p>
+  </div>
+  <ul>
+    <li><strong>Empezar por <code>kryptolab</code>:</strong> no tiene settings locales que reintroduzcan el proxy. <code>signalsTrading</code> sí los tiene, así que se prueba después.</li>
+    <li><strong>Falta <code>tmux</code></strong> (no hay screen ni zellij).</li>
+    <li><strong>El perfil nuevo necesita su propio login</strong>, y el trust de cada proyecto vuelve a pedirse una vez.</li>
+    <li><strong>Script listo:</strong> <code>airwork/bin/rc-up &lt;proyecto&gt; [perfil] [modo]</code> quita el proxy del entorno y lanza el servidor en tmux.</li>
+  </ul>
+</section>
+
+<section id="decision">
+  <span class="eyebrow">Decisión</span>
+  <h2>No construir un cliente de chat propio</h2>
+  <p>El <strong>Remote Control oficial</strong> ya cubre el chat, el cambio de modelo y effort, la compactación, los permisos y las push notifications. Lo que falta es un <strong>plano de control</strong> pequeño: arrancar sesiones por proyecto y cuenta, ver el historial, retomar conversaciones viejas y leer los handoffs.</p>
+  <div class="callout"><p><strong>Desde el móvil ya funciona:</strong> <code>/model sonnet</code>, <code>/effort high</code>, <code>/compact</code>, <code>/clear</code>, <code>/context</code>, <code>/usage</code>, <code>/rename</code>, <code>/config k=v</code>. <strong>No funciona:</strong> <code>/resume</code>, que es solo local.</p></div>
+</section>
+
+<section id="opciones">
+  <span class="eyebrow">Investigación</span>
+  <h2>Qué existe hoy</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Opción</th><th>Resuelve</th><th>No resuelve</th><th>Datos pasan por</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td>Remote Control oficial</td><td>App Claude (Android) y claude.ai/code. Modo servidor con hasta 32 sesiones y <code>--spawn worktree</code>. Solo conexiones salientes.</td><td><code>/resume</code> remoto. Un directorio y una cuenta por servidor. No acepta <code>setup-token</code>, API key ni un <code>ANTHROPIC_BASE_URL</code> propio. Se cae tras ~10 min sin red.</td><td>Anthropic (guarda el transcript)</td></tr>
+      <tr><td>Happy</td><td>App open source con cifrado E2E, multi-PC, sesiones en cualquier directorio y relay autohospedable.</td><td>Depende de un tercero que siga el ritmo del CLI.</td><td>Tu relay (cifrado)</td></tr>
+      <tr><td>CloudCLI</td><td>Todas las sesiones históricas, archivos, git y terminal.</td><td>Expone una shell por HTTP: solo es aceptable detrás de Access.</td><td>Tu PC</td></tr>
+      <tr class="pick"><td>Cloudflare Tunnel + Access</td><td>Sin puertos abiertos. Login con passkey/SSO, políticas y service tokens. Gratis hasta 50 usuarios.</td><td>No es una UI, solo transporte y autenticación.</td><td>Edge de Cloudflare</td></tr>
+      <tr><td>Tailscale</td><td>VPN P2P simple.</td><td>Otro proveedor más; con Cloudflare no aporta mucho.</td><td>P2P</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Multi-cuenta:</strong> un <code>CLAUDE_CONFIG_DIR</code> por cuenta. En Linux las credenciales viven dentro de ese directorio, así que el aislamiento es completo.</li>
+    <li><strong>Facturación de <code>claude -p</code> y del SDK:</strong> el crédito separado que se anunció para el 15-jun-2026 se <em>pausó</em>. Hoy siguen consumiendo la suscripción, pero puede cambiar.</li>
+    <li><strong>Términos:</strong> usar tus propias cuentas está bien. Rotarlas automáticamente para esquivar los límites puede violar los términos, así que el cambio de cuenta será manual.</li>
+  </ul>
+</section>
+
+<section id="arquitectura">
+  <span class="eyebrow">Arquitectura</span>
+  <h2>Motor oficial + plano de control propio</h2>
+  <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  M[Celular]
+  M -->|App Claude| A[(Anthropic)]
+  A <-->|saliente HTTPS| RC["claude remote-control<br/>por proyecto y cuenta"]
+  M -->|PWA airwork| CF["Cloudflare Access<br/>passkey"]
+  CF -->|Tunnel| AG["airwork-agent<br/>127.0.0.1"]
+  AG -->|arranca / retoma| RC
+  CF --> HUB["hub.dominio<br/>Worker + KV"]
+  subgraph PC1 [PC-n]
+    RC
+    AG
+  end
+</pre>
+  </div>
+  <div class="comp">
+    <div><span class="tag">En cada PC</span><h3>Motor</h3><p><code>claude remote-control</code> en tmux como servicio <code>systemd --user</code>, uno por proyecto y cuenta, con <code>--name pc/proyecto/cuenta</code> y <code>--spawn worktree</code>.</p></div>
+    <div><span class="tag">En cada PC</span><h3>airwork-agent</h3><p>FastAPI solo en 127.0.0.1, detrás de <code>cloudflared</code>. Endpoints: <code>/projects</code>, <code>/accounts</code>, <code>/sessions</code>, <code>/history</code>, <code>/resume</code>, <code>/handoff</code>.</p></div>
+    <div><span class="tag">Cloudflare</span><h3>hub</h3><p>Worker con la lista de PCs y un heartbeat en KV para ver quién está online. Una sola política de Access protege todo.</p></div>
+    <div><span class="tag">Celular</span><h3>PWA, no APK</h3><p>Se instala desde Chrome sin Play Store y se actualiza sola. Tiene un botón "Abrir en Claude". Una APK (TWA) solo si después hace falta.</p></div>
+  </div>
+  <p><strong>Retomar una sesión antigua:</strong> <code>/resume</code> no existe en el móvil, así que el agente lanza <code>claude --resume &lt;id&gt; --remote-control "&lt;nombre&gt;"</code> en tmux y la sesión aparece en la app.</p>
+</section>
+
+<section id="seguridad">
+  <span class="eyebrow">Seguridad</span>
+  <h2>Quien controla la sesión ejecuta código en tu PC</h2>
+  <div class="callout warn"><p><strong>signalsTrading y kryptolab:</strong> en las máquinas con agente remoto, usa llaves de exchange solo de lectura o de paper trading. Nunca llaves con retiro habilitado.</p></div>
+  <ol class="sec">
+    <li><strong>Cero puertos entrantes.</strong> Remote Control y cloudflared solo abren conexiones salientes. Sin port-forward en el router.</li>
+    <li><strong>Access en todo hostname:</strong> política con solo tu email, passkey o Google con 2FA, sesión de 8 h y restricción de país opcional.</li>
+    <li><strong>El agente valida el JWT</strong> <code>Cf-Access-Jwt-Assertion</code> (firma y <code>aud</code>). No basta con tener Access delante.</li>
+    <li><strong>Sin shell arbitraria:</strong> solo acciones de una lista blanca, dentro de <code>~/programacion</code>. Rechaza <code>..</code> y symlinks que salgan de ahí.</li>
+    <li><strong>Permisos:</strong> nada de <code>bypassPermissions</code>. <code>deny</code> para <code>Read(**/.env*)</code>, <code>~/.ssh/**</code> y secretos. Evalúa <code>--sandbox</code>.</li>
+    <li><strong>Auditoría:</strong> log de cada acción del agente, con rotación.</li>
+    <li><strong>Kill switch:</strong> <code>DELETE /sessions/*</code>, desactivar la regla de Access o el setting <code>disableRemoteControl</code>.</li>
+    <li><strong>Versión fijada</strong> de Claude Code en cada PC, y actualizaciones deliberadas.</li>
+  </ol>
+</section>
+
+<section id="handoff">
+  <span class="eyebrow">Convención</span>
+  <h2>Handoff entre sesiones</h2>
+  <ul>
+    <li><code>/handoff</code> (skill global) escribe <code>docs/handoff/AAAA-MM-DD-HHMM-tema.md</code> con objetivo, estado, archivos, decisiones, próximos pasos y el prompt listo para pegar. Después hace commit.</li>
+    <li><code>/retomar &lt;ruta&gt;</code> lee el archivo, verifica la rama y el estado de git, y continúa.</li>
+    <li>Flujo desde el móvil: <em>"ejecuta /handoff"</em> → <code>/clear</code> → <code>/retomar docs/handoff/…</code>. La PWA lista los handoffs para copiar la ruta.</li>
+  </ul>
+</section>
+
+<section id="fases">
+  <span class="eyebrow">Ejecución</span>
+  <h2>Fases</h2>
+  <p class="meta">Las casillas se guardan solo en este navegador.</p>
+
+  <div class="phase now" data-phase="f0">
+    <div class="phase-head"><h3>Fase 0: validar con lo oficial</h3><span class="pill">en curso</span></div>
+    <div class="progress"><span></span></div>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="f0-a" checked><span>Diagnóstico: headroom bloquea Remote Control. Perfil <code>~/.claude-accounts/remote</code> y script <code>rc-up</code> creados.</span></label></li>
+      <li><label><input type="checkbox" id="f0-b" checked><span>Instalar tmux: <code>sudo pacman -S tmux</code></span></label></li>
+      <li><label><input type="checkbox" id="f0-c" checked><span>Login del perfil: <code>CLAUDE_CONFIG_DIR=~/.claude-accounts/remote claude auth login</code></span></label></li>
+      <li><label><input type="checkbox" id="f0-d" checked><span>Trust de kryptolab: <code>cd ~/programacion/kryptolab &amp;&amp; env -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR=~/.claude-accounts/remote claude</code>, aceptar y salir.</span></label></li>
+      <li><label><input type="checkbox" id="f0-e" checked><span><code>~/programacion/airwork/bin/rc-up kryptolab</code>, luego <code>tmux attach -t rc-kryptolab-remote</code> y responder <code>y</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f0-f"><span>Desde la app Claude, en Code: prompt, <code>/model sonnet</code>, <code>/effort high</code>, <code>/compact</code> y aprobar un permiso.</span></label></li>
+      <li><label><input type="checkbox" id="f0-g"><span>Activar las push notifications en <code>/config</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f0-h"><span>Probar <code>claude --resume &lt;id&gt; --remote-control</code> para confirmar que funciona el retome remoto.</span></label></li>
+      <li><label><input type="checkbox" id="f0-i"><span>Probar un corte de red y la reconexión. Dejarlo 24 h.</span></label></li>
+      <li><label><input type="checkbox" id="f0-j"><span>(Opcional) Probar Happy para comparar.</span></label></li>
+    </ul>
+    <p class="exit"><b>Criterio de salida:</b> saber con certeza qué falta. Lo esperado: historial, arrancar proyectos a distancia y cambiar de cuenta.</p>
+  </div>
+
+  <div class="phase" data-phase="f1">
+    <div class="phase-head"><h3>Fase 1: servicios persistentes y multi-cuenta</h3><span class="meta">1 día</span></div>
+    <div class="progress"><span></span></div>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="f1-1"><span>Un perfil por cuenta en <code>~/.claude-accounts/&lt;alias&gt;/</code>, con el mismo esquema de enlaces que <code>remote</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f1-2"><span>Plantilla <code>airwork-rc@&lt;proyecto&gt;--&lt;cuenta&gt;.service</code> con <code>Restart=on-failure</code> y <code>loginctl enable-linger</code> (hoy está en <code>Linger=no</code>).</span></label></li>
+      <li><label><input type="checkbox" id="f1-3"><span>CLI <code>airwork</code> con <code>up</code>, <code>down</code>, <code>ls</code>, <code>resume &lt;id&gt;</code> y <code>accounts</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f1-4"><span>Skills <code>/handoff</code> y <code>/retomar</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f1-5"><span>Endurecer los permisos del perfil remoto (deny de secretos, sin bypass).</span></label></li>
+      <li><label><input type="checkbox" id="f1-6"><span>Decidir qué hacer con headroom en <code>signalsTrading/.claude/settings.local.json</code>.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="phase" data-phase="f2">
+    <div class="phase-head"><h3>Fase 2: plano de control remoto</h3><span class="meta">2–4 días</span></div>
+    <div class="progress"><span></span></div>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="f2-1"><span><code>airwork-agent</code> (FastAPI) con validación del JWT de Access y log de auditoría.</span></label></li>
+      <li><label><input type="checkbox" id="f2-2"><span>Túnel <code>cloudflared</code> como servicio: <code>pc1.&lt;dominio&gt;</code> → <code>127.0.0.1</code>.</span></label></li>
+      <li><label><input type="checkbox" id="f2-3"><span>Aplicación self-hosted en Access con solo tu email y passkey.</span></label></li>
+      <li><label><input type="checkbox" id="f2-4"><span>PWA: PCs → proyectos → [Nueva sesión | Historial | Handoffs] → Abrir en Claude.</span></label></li>
+      <li><label><input type="checkbox" id="f2-5"><span>Visor de historial: parsear los <code>.jsonl</code>, listar por fecha y ofrecer el botón "Retomar".</span></label></li>
+    </ul>
+  </div>
+
+  <div class="phase" data-phase="f3">
+    <div class="phase-head"><h3>Fase 3: multi-PC y hub</h3><span class="meta">1–2 días</span></div>
+    <div class="progress"><span></span></div>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="f3-1"><span>Instalador del agente y registro del túnel en cada PC.</span></label></li>
+      <li><label><input type="checkbox" id="f3-2"><span>Worker <code>hub.&lt;dominio&gt;</code> con heartbeat en KV y estado online/offline.</span></label></li>
+      <li><label><input type="checkbox" id="f3-3"><span>(Opcional) Wake-on-LAN desde un dispositivo siempre encendido, detrás de Access.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="phase" data-phase="f4">
+    <div class="phase-head"><h3>Fase 4: pulido</h3><span class="meta">opcional</span></div>
+    <div class="progress"><span></span></div>
+    <ul class="checks">
+      <li><label><input type="checkbox" id="f4-1"><span>Uso por cuenta y aviso cuando una está cerca del límite (el cambio sigue siendo manual).</span></label></li>
+      <li><label><input type="checkbox" id="f4-2"><span>Notificaciones propias (ntfy o Telegram) para eventos del agente.</span></label></li>
+      <li><label><input type="checkbox" id="f4-3"><span>APK con TWA, si la PWA se queda corta.</span></label></li>
+    </ul>
+  </div>
+</section>
+
+<section id="riesgos">
+  <span class="eyebrow">Abierto</span>
+  <h2>Riesgos y preguntas sin verificar</h2>
+  <div class="risks">
+    <div><h3>Headroom contra Remote Control</h3><p>Las sesiones remotas pierden la compresión de headroom. Si el consumo sube mucho, habrá que evaluar si compensa.</p></div>
+    <div><h3>Cambio de cuenta en la app</h3><p>Cada cuenta ve solo sus propias sesiones. Falta verificar si la app Android admite varias cuentas; el respaldo son perfiles de navegador en claude.ai/code.</p></div>
+    <div><h3>Retome remoto</h3><p>Hay que validar <code>--resume</code> + <code>--remote-control</code>: el nombre de la sesión, la reconexión y que no queden dos procesos con la misma conversación.</p></div>
+    <div><h3>Dependencia de Anthropic</h3><p>Remote Control todavía cambia con frecuencia. Happy queda como plan B.</p></div>
+    <div><h3>PC encendido</h3><p>No sirve con el PC suspendido. Ajusta la suspensión o usa Wake-on-LAN.</p></div>
+  </div>
+</section>
+
+<footer>
+  <span>Fuente local: <code>airwork/docs/PLAN.md</code></span>
+  <span>Referencias: <a href="https://code.claude.com/docs/en/remote-control">Remote Control</a> · <a href="https://code.claude.com/docs/en/authentication">Authentication</a> · <a href="https://happy.engineering/docs/guides/self-hosting/">Happy self-hosting</a> · <a href="https://github.com/siteboon/claudecodeui">claudecodeui</a> · <a href="https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/">Cloudflare Tunnel</a> · <a href="https://zed.dev/blog/anthropic-subscription-changes">Cambio de facturación pausado</a></span>
+</footer>
+</div>
+
+<script>
+(function(){
+  var KEY='airwork-plan-checks';
+  var state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){state={};}
+  var boxes=document.querySelectorAll('.checks input[type=checkbox]');
+  function refresh(){
+    document.querySelectorAll('.phase').forEach(function(p){
+      var all=p.querySelectorAll('input[type=checkbox]'),done=0;
+      all.forEach(function(b){if(b.checked)done++;});
+      p.querySelector('.progress span').style.width=(all.length?done/all.length*100:0)+'%';
+    });
+  }
+  boxes.forEach(function(b){
+    if(b.id in state)b.checked=state[b.id];
+    b.addEventListener('change',function(){
+      state[b.id]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+      refresh();
+    });
+  });
+  refresh();
+})();
+</script>

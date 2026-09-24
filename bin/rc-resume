@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Retoma una conversación antigua y la publica en Remote Control (aparece en la app en unos segundos).
+# Uso: rc-resume <proyecto> <id-o-prefijo> [perfil]
+set -euo pipefail
+
+proj="${1:?uso: rc-resume <proyecto> <id> [perfil]}"
+prefix="${2:?uso: rc-resume <proyecto> <id> [perfil]}"
+conf_line="$(awk -v p="$proj" '$1==p {print $2, $3}' "$(dirname "$0")/../config/projects.conf")"
+profile="${3:-${conf_line%% *}}"
+profile="${profile:-remote}"
+mode="${conf_line##* }"
+mode="${mode:-default}"
+cfg="$HOME/.claude-accounts/$profile"
+base="$(printf '%s' "$HOME/programacion/$proj" | sed 's/[^A-Za-z0-9]/-/g')"
+
+mapfile -t found < <(find "$HOME/.claude/projects/" -maxdepth 2 -path "*/${base}*/${prefix}*.jsonl" 2>/dev/null)
+[[ ${#found[@]} -eq 1 ]] || { echo "Se encontraron ${#found[@]} sesiones con '$prefix' en $proj" >&2; exit 1; }
+file="${found[0]}"
+id="$(basename "$file" .jsonl)"
+
+# La sesión debe retomarse en el mismo directorio donde se creó (puede ser un worktree).
+cwd="$(python3 -c 'import json,sys
+for l in open(sys.argv[1]):
+    try: o=json.loads(l)
+    except ValueError: continue
+    if o.get("cwd"): print(o["cwd"]); break' "$file")"
+[[ -d "$cwd" ]] || { echo "El directorio original ya no existe: $cwd" >&2; exit 1; }
+
+sess="resume-${proj}-${id:0:8}"
+tmux has-session -t "$sess" 2>/dev/null && { echo "Ya está abierta: tmux attach -t $sess"; exit 0; }
+
+tmux new-session -d -s "$sess" -c "$cwd" \
+  bash -c 'env -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR="$0" claude --resume "$1" --remote-control "$2" --permission-mode "$3"
+           echo "[claude terminó con código $?]"; exec bash' \
+  "$cfg" "$id" "$(cat /etc/hostname 2>/dev/null || uname -n)/$proj/retomada-${id:0:8}" "$mode"
+
+echo "Retomada $id en tmux '$sess' (cwd: $cwd)"
+echo "Búscala en la app como '.../$proj/retomada-${id:0:8}'. Ver: tmux attach -t $sess"

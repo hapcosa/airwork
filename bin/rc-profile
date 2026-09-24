@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Crea un perfil de cuenta en ~/.claude-accounts/<alias> para Remote Control.
+# Copia ~/.claude/settings.json sin ANTHROPIC_BASE_URL (headroom bloquea Remote Control)
+# y enlaza lo compartido: instrucciones, skills, agentes, plugins e historial.
+# Uso: rc-profile <alias>
+set -euo pipefail
+
+alias_="${1:?uso: rc-profile <alias>}"
+cfg="$HOME/.claude-accounts/$alias_"
+[[ -e "$cfg" ]] && { echo "Ya existe $cfg" >&2; exit 1; }
+mkdir -p "$cfg"
+
+python3 - "$cfg/settings.json" <<'EOF'
+import json, os, sys
+d = json.load(open(os.path.expanduser('~/.claude/settings.json')))
+d.get('env', {}).pop('ANTHROPIC_BASE_URL', None)
+json.dump(d, open(sys.argv[1], 'w'), indent=2, ensure_ascii=False)
+EOF
+chmod 600 "$cfg/settings.json"
+
+for f in CLAUDE.md RTK.md skills agents plugins projects; do
+  [[ -e "$HOME/.claude/$f" ]] && ln -s "$HOME/.claude/$f" "$cfg/$f"
+done
+
+echo "Perfil creado: $cfg"
+echo "Inicia sesión con la cuenta que corresponda:"
+echo "  CLAUDE_CONFIG_DIR=$cfg claude auth login"
+echo "Luego acepta el trust de cada proyecto que asignes a este perfil (rc-all check te dice cuáles)."

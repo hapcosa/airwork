@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Levanta un servidor de Remote Control para un proyecto de ~/programacion dentro de tmux.
+# Uso: rc-up <proyecto> [perfil] [permission-mode]
+#   perfil: carpeta en ~/.claude-accounts (por defecto: remote)
+#   permission-mode: default | acceptEdits (por defecto: default)
+# Ejemplo: rc-up kryptolab
+set -euo pipefail
+
+proj="${1:?uso: rc-up <proyecto> [perfil] [permission-mode]}"
+profile="${2:-remote}"
+mode="${3:-default}"
+dir="$HOME/programacion/$proj"
+cfg="$HOME/.claude-accounts/$profile"
+name="$(cat /etc/hostname 2>/dev/null || uname -n)/$proj/$profile"
+sess="rc-${proj}-${profile}"
+
+[[ -d "$dir" ]] || { echo "No existe $dir" >&2; exit 1; }
+[[ -d "$cfg" ]] || { echo "No existe el perfil $cfg" >&2; exit 1; }
+command -v tmux >/dev/null || { echo "Falta tmux: sudo pacman -S tmux" >&2; exit 1; }
+
+trusted=$(python3 -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("projects",{}).get(sys.argv[2],{}).get("hasTrustDialogAccepted",False))
+except Exception: print(False)' "$cfg/.claude.json" "$dir")
+if [[ "$trusted" != "True" ]]; then
+  echo "El perfil '$profile' no confía en $dir todavía. Ejecuta en una terminal, acepta el diálogo y sal con /exit:" >&2
+  echo "  cd $dir && env -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR=$cfg claude" >&2
+  exit 1
+fi
+
+if tmux has-session -t "$sess" 2>/dev/null; then
+  echo "Ya corre: tmux attach -t $sess"; exit 0
+fi
+
+spawn="same-dir"
+git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 && spawn="worktree"
+
+# ANTHROPIC_BASE_URL (proxy headroom) desactiva Remote Control: se quita del entorno.
+# Si claude termina, la ventana queda abierta con un shell para ver el error.
+tmux new-session -d -s "$sess" -c "$dir" \
+  bash -c 'env -u ANTHROPIC_BASE_URL CLAUDE_CONFIG_DIR="$0" claude remote-control --name "$1" --spawn "$2" --permission-mode "$3"
+           echo "[claude remote-control terminó con código $?]"; exec bash' \
+  "$cfg" "$name" "$spawn" "$mode"
+
+echo "Servidor '$name' en tmux '$sess' (spawn=$spawn, permisos=$mode)"
+echo "Ver o aceptar la confirmación inicial: tmux attach -t $sess  (salir sin cerrar: Ctrl-b d)"
