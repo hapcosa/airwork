@@ -95,6 +95,8 @@ async def main():
             await page.get_by_text("Handoffs (1)").click()
             await page.get_by_text("2026-09-24-1200-demo.md").click()
             await expect(page.get_by_text("prompt listo")).to_be_visible()
+            await page.get_by_role("button", name="Retomar en una conversación nueva").click()
+            await expect(page.locator("textarea")).to_have_value("/retomar docs/handoff/2026-09-24-1200-demo.md")
             await ctx.close()
         await b.close()
     print("capturas en", OUT)

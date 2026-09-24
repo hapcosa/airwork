@@ -283,11 +283,15 @@ async function viewSessions(view, project) {
 async function viewHandoff(view, project, name) {
   setTop(name, project, `#/p/${encodeURIComponent(project)}`);
   const f = await api(`/projects/${encodeURIComponent(project)}/handoffs?name=${encodeURIComponent(name)}`);
+  const startWith = (draft) => () => {
+    try { sessionStorage.setItem("airwork.draft", draft); } catch { /* nada */ }
+    location.hash = `#/s/${encodeURIComponent(project)}/new`;
+  };
   view.append(
-    h("button", { class: "primary wide", onclick: () => {
-      try { sessionStorage.setItem("airwork.draft", `Retoma el trabajo según ${f.path}:\n\n${f.content}`); } catch { /* nada */ }
-      location.hash = `#/s/${encodeURIComponent(project)}/new`;
-    } }, "Usar como prompt en una conversación nueva"),
+    h("button", { class: "primary wide", onclick: startWith(`/retomar ${f.path}`) }, "Retomar en una conversación nueva"),
+    // Alternativa para PCs sin la skill /retomar: pega el handoff completo.
+    h("button", { class: "wide", onclick: startWith(`Retoma el trabajo según ${f.path}:\n\n${f.content}`) },
+      "Pegar el handoff como prompt"),
     h("pre", { class: "doc" }, f.content));
 }
 

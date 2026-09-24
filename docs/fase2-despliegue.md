@@ -161,6 +161,18 @@ De menor a mayor alcance:
 
    Esto funciona aunque no tengas acceso al PC.
 
+## 7. Skills `/handoff` y `/retomar`
+
+Viven en `~/.claude/skills/`. La copia de referencia está en `skills/` del repo. En otro PC:
+
+```sh
+cp -r ~/programacion/airwork/skills/{handoff,retomar} ~/.claude/skills/
+```
+
+Los perfiles de `~/.claude-accounts/<alias>` las ven porque `rc-profile` enlaza `skills` a
+`~/.claude/skills`. En la PWA, cada handoff tiene el botón "Retomar en una conversación
+nueva", que deja `/retomar docs/handoff/<archivo>.md` listo para enviar.
+
 ## Qué no cubre este despliegue
 
 - El endurecimiento de systemd es mínimo a propósito: `NoNewPrivileges`, sin `sudo` dentro de
