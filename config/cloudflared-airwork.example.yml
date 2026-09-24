@@ -1,0 +1,14 @@
+# Copia a ~/.config/airwork/cloudflared.yml y reemplaza <UUID>, <pc> y <dominio>.
+# El UUID y el .json salen de: cloudflared tunnel create airwork-<pc>
+tunnel: <UUID>
+credentials-file: /home/obrero/.cloudflared/<UUID>.json
+
+# Sin métricas expuestas fuera de loopback.
+metrics: 127.0.0.1:0
+
+ingress:
+  - hostname: <pc>.<dominio>
+    service: http://127.0.0.1:8790
+    # No uses httpHostHeader: el agente compara Origin con Host para frenar CSRF
+    # y necesita recibir el hostname público tal cual.
+  - service: http_status:404

@@ -1,0 +1,17 @@
+# Túnel de Cloudflare solo para airwork (unidad de usuario). Independiente de cualquier
+# otro túnel que tengas en ~/.cloudflared: usa su propia config y su propia credencial.
+[Unit]
+Description=cloudflared: túnel de airwork
+Documentation=file://%h/programacion/airwork/docs/fase2-despliegue.md
+After=airwork-agent.service
+Wants=airwork-agent.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/cloudflared --no-autoupdate --config %h/.config/airwork/cloudflared.yml tunnel run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

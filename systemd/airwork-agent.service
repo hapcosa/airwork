@@ -1,0 +1,26 @@
+# airwork-agent: API + PWA en 127.0.0.1:8790. Unidad de usuario (systemctl --user).
+# Instalación: ver docs/fase2-despliegue.md.
+[Unit]
+Description=airwork-agent (Claude Code remoto vía PWA)
+Documentation=file://%h/programacion/airwork/docs/fase2-despliegue.md
+
+[Service]
+Type=exec
+WorkingDirectory=%h/programacion/airwork/agent
+# El archivo tiene AIRWORK_ACCESS_* y AIRWORK_ALLOWED_EMAILS; debe tener permisos 600.
+EnvironmentFile=%h/.config/airwork/agent.env
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/programacion/airwork/agent/.venv/bin/airwork-agent
+Restart=on-failure
+RestartSec=5
+# Al detener, se cierran las sesiones de claude hijas junto con el agente.
+KillMode=control-group
+TimeoutStopSec=20
+# Endurecimiento compatible con --user. Nada que cambie el umask ni /tmp: los procesos
+# claude trabajan en tus proyectos y deben crear archivos como en una terminal normal.
+NoNewPrivileges=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=default.target
